@@ -5,4 +5,4 @@
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200npm install --save-dev @types/react @types/react-dom
+  status = 200
