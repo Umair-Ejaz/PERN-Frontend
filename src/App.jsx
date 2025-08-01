@@ -10,6 +10,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Users />} />
+        <Route path="/users" element={<Users />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/products" element={<Products />} />
         <Route path="/orders" element={<Orders />} />
