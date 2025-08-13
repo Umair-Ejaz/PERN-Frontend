@@ -10,13 +10,9 @@ const Users = () => (
       <StatsCard title="New This Week" value="78" change="-2%" trend="down" />
       <StatsCard title="Banned Users" value="23" change="+0.5%" trend="neutral" />
     </div>
-    
-    <div className="bento-box bg-white rounded-xl shadow-sm p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">User Management</h1>
-        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors">
-          Add New User
-        </button>
+
+    <div className="bento-box bg-white rounded-xl shadow-sm p-6 ">
+      <div className="flex justify-between items-center ">
       </div>
       <UserTable />
     </div>

@@ -1,171 +1,385 @@
-const OrderTable = () => {
-  const orders = [
-    { 
-      id: 101, 
-      customer: "Alice Johnson", 
-      email: "alice@example.com",
-      total: 250.0, 
-      date: "2023-05-15",
-      status: "Pending",
-      payment: "Credit Card",
-      items: 3
-    },
-    { 
-      id: 102, 
-      customer: "Bob Smith", 
-      email: "bob@example.com",
-      total: 120.5, 
-      date: "2023-05-14",
-      status: "Delivered",
-      payment: "PayPal",
-      items: 2
-    },
-    { 
-      id: 103, 
-      customer: "Charlie Brown", 
-      email: "charlie@example.com",
-      total: 89.99, 
-      date: "2023-05-14",
-      status: "Processing",
-      payment: "Credit Card",
-      items: 1
-    },
-    { 
-      id: 104, 
-      customer: "Diana Prince", 
-      email: "diana@example.com",
-      total: 345.75, 
-      date: "2023-05-13",
-      status: "Delivered",
-      payment: "Bank Transfer",
-      items: 5
-    },
-  ];
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 
-  const statusStyles = {
-    Pending: "bg-yellow-100 text-yellow-800",
-    Processing: "bg-blue-100 text-blue-800",
-    Delivered: "bg-green-100 text-green-800",
-    Cancelled: "bg-red-100 text-red-800",
+const API_URL = "http://localhost:3001/api/orders";
+
+const OrderTable = () => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState([]);
+
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [formData, setFormData] = useState({
+    userId: "",
+    total_amount: "",
+    payment: "cash",
+    status: "pending",
+    items: [],
+  });
+
+  // Helper: Format order items for table
+  const formatOrderItems = (items) => {
+    if (!Array.isArray(items) || items.length === 0) return "No items";
+    return items
+      .map((item) => {
+        const name = item.Product?.name || "Unknown";
+        return `${name} (x${item.quantity})`;
+      })
+      .join(", ");
   };
 
+  // Fetch orders
+  const fetchOrders = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      setOrders(res.data);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch users
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/users");
+      setUsers(res.data);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+    fetchUsers();
+  }, []);
+
+  // Create
+  const handleCreate = async () => {
+    try {
+      await axios.post(API_URL, formData);
+      fetchOrders();
+      setShowCreateModal(false);
+    } catch (err) {
+      console.error("Error creating order:", err);
+    }
+  };
+
+  // Update
+  const handleUpdate = async () => {
+    try {
+      await axios.put(`${API_URL}/${selectedOrder.id}`, formData);
+      fetchOrders();
+      setShowEditModal(false);
+    } catch (err) {
+      console.error("Error updating order:", err);
+    }
+  };
+
+  // Delete
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`${API_URL}/${selectedOrder.id}`);
+      fetchOrders();
+      setShowDeleteModal(false);
+    } catch (err) {
+      console.error("Error deleting order:", err);
+    }
+  };
+
+  const statusStyles = {
+    pending: "bg-yellow-100 text-yellow-800",
+    processing: "bg-blue-100 text-blue-800",
+    delivered: "bg-green-100 text-green-800",
+  };
+
+  if (loading) return <p className="p-4">Loading...</p>;
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Order
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Customer
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Date
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Items
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Payment
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Total
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {orders.map((order) => (
-            <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                #{order.id}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{order.customer}</div>
-                <div className="text-sm text-gray-500">{order.email}</div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {order.date}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {order.items}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {order.payment}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                ${order.total.toFixed(2)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusStyles[order.status]}`}>
-                  {order.status}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button className="text-indigo-600 hover:text-indigo-900 mr-3">View</button>
-                <button className="text-gray-600 hover:text-gray-900">Edit</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="bg-white px-6 py-3 flex items-center justify-between border-t border-gray-200">
-        <div className="flex-1 flex justify-between sm:hidden">
-          <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Previous
-          </button>
-          <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Next
-          </button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">1</span> to <span className="font-medium">4</span> of{' '}
-              <span className="font-medium">1,284</span> orders
-            </p>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-              <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                <span className="sr-only">Previous</span>
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
-              <button aria-current="page" className="z-10 bg-indigo-50 border-indigo-500 text-indigo-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                1
-              </button>
-              <button className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                2
-              </button>
-              <button className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                3
-              </button>
-              <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                ...
-              </span>
-              <button className="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                8
-              </button>
-              <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                <span className="sr-only">Next</span>
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </nav>
-          </div>
-        </div>
+    <div className="p-4">
+      {/* Create Button */}
+      <div className="flex justify-end mb-4">
+        <button
+          className="px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition"
+          onClick={() => {
+            setFormData({
+              userId: "",
+              total_amount: "",
+              payment: "cash",
+              status: "pending",
+              items: [],
+            });
+            setShowCreateModal(true);
+          }}
+        >
+          + Create Order
+        </button>
       </div>
+
+      {/* Orders Table */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-6 py-3 text-left font-semibold">Order</th>
+              <th className="px-6 py-3 text-left font-semibold">Customer</th>
+              <th className="px-6 py-3 text-left font-semibold">Date</th>
+              <th className="px-6 py-3 text-left font-semibold">Items</th>
+              <th className="px-6 py-3 text-left font-semibold">Payment</th>
+              <th className="px-6 py-3 text-left font-semibold">Total</th>
+              <th className="px-6 py-3 text-left font-semibold">Status</th>
+              <th className="px-6 py-3 text-right font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-100">
+            {orders.map((order) => (
+              <tr key={order.id} className="hover:bg-gray-50 transition">
+                <td className="px-6 py-4">#{order.id}</td>
+                <td className="px-6 py-4">
+                  <div className="font-medium">{order.User?.name}</div>
+                  <div className="text-gray-500">{order.User?.email}</div>
+                </td>
+                <td className="px-6 py-4">
+                  {new Date(order.order_date).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4">{formatOrderItems(order.OrderItems)}</td>
+                <td className="px-6 py-4">{order.payment}</td>
+                <td className="px-6 py-4 font-medium">
+                  ${parseFloat(order.total_amount).toFixed(2)}
+                </td>
+                <td className="px-6 py-4">
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full ${statusStyles[order.status]}`}
+                  >
+                    {order.status}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <button
+                    className="text-blue-600 hover:underline mr-3"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setFormData({
+                        userId: order.userId,
+                        total_amount: order.total_amount,
+                        payment: order.payment,
+                        status: order.status,
+                        items:
+                          order.OrderItems?.map((item) => ({
+                            productId: item.productId,
+                            quantity: item.quantity,
+                            price: item.price,
+                          })) || [],
+                      });
+                      setShowEditModal(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="text-red-600 hover:underline"
+                    onClick={() => {
+                      setSelectedOrder(order);
+                      setShowDeleteModal(true);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <Modal
+          title="Create Order"
+          formData={formData}
+          setFormData={setFormData}
+          users={users}
+          onSubmit={handleCreate}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <Modal
+          title="Edit Order"
+          formData={formData}
+          setFormData={setFormData}
+          users={users}
+          onSubmit={handleUpdate}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <ConfirmModal
+          title="Delete Order"
+          message={`Are you sure you want to delete order #${selectedOrder?.id}?`}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteModal(false)}
+        />
+      )}
     </div>
   );
 };
+
+// Create/Edit Modal
+const Modal = ({ title, formData, setFormData, onSubmit, onClose, users }) => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+      <h2 className="text-lg font-bold mb-4">{title}</h2>
+
+      {/* User Dropdown */}
+      <select
+        value={formData.userId}
+        onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
+        className="border p-2 mb-3 w-full rounded"
+      >
+        <option value="">Select Customer</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {user.name} ({user.email})
+          </option>
+        ))}
+      </select>
+
+      {/* Total */}
+      <input
+        type="number"
+        placeholder="Total Amount"
+        value={formData.total_amount}
+        onChange={(e) =>
+          setFormData({ ...formData, total_amount: e.target.value })
+        }
+        className="border p-2 mb-3 w-full rounded"
+      />
+
+      {/* Payment */}
+      <select
+        value={formData.payment}
+        onChange={(e) => setFormData({ ...formData, payment: e.target.value })}
+        className="border p-2 mb-3 w-full rounded"
+      >
+        <option value="cash">Cash</option>
+        <option value="bank transfer">Bank Transfer</option>
+        <option value="paypal">PayPal</option>
+        <option value="creditcard">Credit Card</option>
+      </select>
+
+      {/* Status */}
+      <select
+        value={formData.status}
+        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+        className="border p-2 mb-3 w-full rounded"
+      >
+        <option value="pending">Pending</option>
+        <option value="processing">Processing</option>
+        <option value="delivered">Delivered</option>
+      </select>
+
+      {/* Items */}
+      <div className="mb-3">
+        <h4 className="font-semibold mb-2">Items</h4>
+        {formData.items.map((item, idx) => (
+          <div key={idx} className="flex gap-2 mb-2">
+            <input
+              type="number"
+              placeholder="Product ID"
+              value={item.productId}
+              onChange={(e) => {
+                const newItems = [...formData.items];
+                newItems[idx].productId = parseInt(e.target.value) || "";
+                setFormData({ ...formData, items: newItems });
+              }}
+              className="border p-2 rounded w-1/3"
+            />
+            <input
+              type="number"
+              placeholder="Qty"
+              value={item.quantity}
+              onChange={(e) => {
+                const newItems = [...formData.items];
+                newItems[idx].quantity = parseInt(e.target.value) || "";
+                setFormData({ ...formData, items: newItems });
+              }}
+              className="border p-2 rounded w-1/3"
+            />
+            <input
+              type="number"
+              placeholder="Price"
+              value={item.price}
+              onChange={(e) => {
+                const newItems = [...formData.items];
+                newItems[idx].price = parseFloat(e.target.value) || "";
+                setFormData({ ...formData, items: newItems });
+              }}
+              className="border p-2 rounded w-1/3"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          className="text-blue-600 text-sm hover:underline"
+          onClick={() =>
+            setFormData({
+              ...formData,
+              items: [
+                ...formData.items,
+                { productId: "", quantity: "", price: "" },
+              ],
+            })
+          }
+        >
+          + Add Item
+        </button>
+      </div>
+
+      <div className="flex justify-end space-x-2">
+        <button className="px-4 py-2 bg-gray-300 rounded" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          onClick={onSubmit}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// Delete Confirmation
+const ConfirmModal = ({ title, message, onConfirm, onCancel }) => (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+      <h2 className="text-lg font-bold mb-4">{title}</h2>
+      <p className="mb-4">{message}</p>
+      <div className="flex justify-end space-x-2">
+        <button className="px-4 py-2 bg-gray-300 rounded" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          onClick={onConfirm}
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 export default OrderTable;
